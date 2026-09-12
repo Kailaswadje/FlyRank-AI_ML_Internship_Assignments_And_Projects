@@ -1,0 +1,21 @@
+{
+  "random_seed": 42,
+  "n_rows_lane4": 12023,
+  "n_clients_lane4": 28,
+  "label_base_rate": 0.33693753638858853,
+  "model_precision_at_20": 0.6,
+  "model_precision_at_50": 0.52,
+  "baseline_precision_at_20": 0.35,
+  "baseline_precision_at_50": 0.36,
+  "archetype_pct": {
+    "healthy": 0.3847,
+    "ctr_only_underperformer": 0.2784,
+    "dual_underperformer": 0.2113,
+    "engagement_only_underperformer": 0.1256
+  },
+  "dual_underperformer_rate_by_age": {
+    "<6mo": 0.1767,
+    "6-12mo": 0.2049,
+    "1-2yr": 0.2861
+  }
+}
