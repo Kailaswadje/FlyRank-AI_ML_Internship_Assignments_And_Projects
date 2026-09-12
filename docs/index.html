@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Which pages should you review first? A tier-adjusted CTR and engagement scoring study</title>
+<meta name="description" content="A validated content-prioritization scoring system built on FlyRank's anonymized search dataset, comparing a transparent baseline against a client-validated Random Forest.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #16211D;
+    --paper: #FBFBF9;
+    --teal: #2E7D6E;
+    --teal-dim: #E4EFEC;
+    --rust: #B5502E;
+    --rust-dim: #F5E8E3;
+    --mist: #E7EBE8;
+    --muted: #5B6B64;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Public Sans', -apple-system, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+  }
+  ::selection { background: var(--teal-dim); }
+  a { color: var(--teal); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:hover { color: var(--rust); }
+
+  .measure { max-width: 680px; margin: 0 auto; padding: 0 24px; }
+  .wide { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  header.hero {
+    padding: 88px 0 56px;
+    border-bottom: 1px solid var(--mist);
+  }
+  header.hero h1 {
+    font-family: 'Newsreader', serif;
+    font-weight: 500;
+    font-size: clamp(2rem, 5vw, 2.9rem);
+    line-height: 1.18;
+    margin: 0 0 18px;
+    letter-spacing: -0.01em;
+  }
+  header.hero .subhead {
+    font-family: 'Newsreader', serif;
+    font-style: italic;
+    font-size: 1.2rem;
+    color: var(--muted);
+    margin: 0 0 40px;
+    max-width: 46ch;
+  }
+  .abstract {
+    font-family: 'Newsreader', serif;
+    font-size: 1.12rem;
+    line-height: 1.7;
+    color: var(--ink);
+    border-left: 3px solid var(--teal);
+    padding-left: 24px;
+  }
+  .abstract .label {
+    display: block;
+    font-family: 'Public Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.03em;
+    color: var(--teal);
+    margin-bottom: 10px;
+  }
+
+  .stat-strip {
+    display: flex;
+    gap: 0;
+    margin-top: 48px;
+    border-top: 1px solid var(--mist);
+  }
+  .stat {
+    flex: 1;
+    padding: 22px 20px 0;
+    border-right: 1px solid var(--mist);
+  }
+  .stat:last-child { border-right: none; }
+  .stat .num {
+    font-family: 'Newsreader', serif;
+    font-size: 2rem;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .stat .num span { color: var(--teal); }
+  .stat .cap {
+    font-size: 0.86rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  section.chapter {
+    padding: 64px 0;
+    border-bottom: 1px solid var(--mist);
+  }
+  section.chapter:last-of-type { border-bottom: none; }
+  .chapter-head {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 8px;
+    align-items: baseline;
+    margin-bottom: 28px;
+  }
+  .chapter-head .n {
+    font-family: 'Newsreader', serif;
+    font-size: 1.9rem;
+    color: var(--teal);
+    font-weight: 500;
+  }
+  .chapter-head h2 {
+    font-family: 'Newsreader', serif;
+    font-weight: 500;
+    font-size: 1.55rem;
+    margin: 0;
+  }
+  section.chapter p { margin: 0 0 18px; }
+  section.chapter p.lede {
+    font-family: 'Newsreader', serif;
+    font-size: 1.15rem;
+    color: var(--ink);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0 28px;
+    font-size: 0.92rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--mist);
+  }
+  th {
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.82rem;
+  }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.highlight td { background: var(--teal-dim); font-weight: 600; }
+
+  figure { margin: 32px 0; }
+  figure img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px solid var(--mist);
+    border-radius: 2px;
+  }
+  figcaption {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-top: 10px;
+    max-width: 60ch;
+  }
+
+  .callout {
+    background: var(--rust-dim);
+    border-left: 3px solid var(--rust);
+    padding: 18px 22px;
+    margin: 24px 0;
+    font-size: 0.96rem;
+  }
+  .callout strong { color: var(--rust); }
+
+  ul.reason-codes { list-style: none; padding: 0; margin: 20px 0; }
+  ul.reason-codes li {
+    padding: 8px 0 8px 22px;
+    border-bottom: 1px solid var(--mist);
+    position: relative;
+  }
+  ul.reason-codes li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--teal);
+  }
+
+  code, pre {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85rem;
+  }
+  pre {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 18px 20px;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.6;
+  }
+  code.inline {
+    background: var(--mist);
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  .repro-list { margin: 20px 0; padding-left: 0; list-style: none; }
+  .repro-list li { padding: 6px 0; }
+  .repro-list a { font-weight: 500; }
+
+  footer.credit {
+    padding: 48px 0 88px;
+    text-align: left;
+  }
+  footer.credit .line {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 22px 24px;
+    background: var(--teal-dim);
+    border-radius: 4px;
+    font-size: 0.98rem;
+  }
+  footer.credit .line a { font-weight: 600; }
+
+  @media (max-width: 640px) {
+    header.hero { padding: 56px 0 40px; }
+    .stat-strip { flex-direction: column; }
+    .stat { border-right: none; border-bottom: 1px solid var(--mist); padding-bottom: 18px; }
+    .chapter-head { grid-template-columns: 36px 1fr; }
+    .chapter-head .n { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="measure">
+  <header class="hero">
+    <h1>Which pages should you review first?</h1>
+    <p class="subhead">A tier-adjusted CTR and engagement scoring study, validated on held-out clients — and honest about where it stops being valid.</p>
+
+    <div class="abstract">
+      <span class="label">Abstract</span>
+      Which visible search pages under-capture clicks or engagement relative to their position tier, and which should a content reviewer look at first under limited review capacity? Using FlyRank's anonymized starter dataset (12,023 visible pages across 28 clients), I built a transparent tier-adjusted baseline and compared it against a Random Forest under a client-grouped holdout split. The model reached precision@20 of 0.600 against the baseline's 0.350 (ROC AUC 0.776 vs. 0.648) — a real, validated improvement, though roughly 40% of the model's edge traces to a single feature the baseline never had access to. The output is a reason-coded, four-archetype action playbook — not an automated decision — with an explicit no-go list for what this scoring should never be used for on its own.
+    </div>
+
+    <div class="stat-strip">
+      <div class="stat">
+        <div class="num"><span>0.600</span></div>
+        <div class="cap">Precision@20, model vs. 0.350 baseline</div>
+      </div>
+      <div class="stat">
+        <div class="num"><span>0.776</span></div>
+        <div class="cap">ROC AUC, model vs. 0.648 baseline</div>
+      </div>
+      <div class="stat">
+        <div class="num"><span>28</span></div>
+        <div class="cap">Clients, zero overlap between train and test</div>
+      </div>
+    </div>
+  </header>
+</div>
+
+<div class="measure">
+
+  <section class="chapter">
+    <div class="chapter-head"><span class="n">1</span><h2>Introduction</h2></div>
+    <p class="lede">A content team never has time to review every page — they have time to review some pages. The question that matters isn't "is this page bad," it's "which page should someone open first."</p>
+    <p>A flat rule (say, "CTR below 0.5% is a problem") sounds reasonable until you check it against real position-tier data: a page ranking #2 and a page ranking #18 have very different baseline expectations for clicks, and treating them the same either over-flags the top of the results or misses real problems lower down. This study builds a tier-adjusted scoring system, validates it honestly against clients it has never seen, and turns the result into a playbook a reviewer could actually use tomorrow — with explicit limits on what it can and can't claim.</p>
+  </section>
+
+  <section class="chapter">
+    <div class="chapter-head"><span class="n">2</span><h2>Data</h2></div>
+    <p><strong>Source:</strong> <code class="inline">data/raw/content_refresh_anonymized.csv</code> — the anonymized starter dataset shipped with the FlyRank ML Internship repo. The lane guide explicitly approves this dataset (alongside the full Hugging Face warehouse release) for this line of work; every executed, validated result in this paper comes from the starter dataset.</p>
+    <table>
+      <tr><th>Stage</th><th class="num">Rows</th><th class="num">Clients</th></tr>
+      <tr><td>Raw file</td><td class="num">30,000</td><td class="num">32</td></tr>
+      <tr><td>After standard filters (impressions &gt; 0, age ≥ 90 days)</td><td class="num">30,000</td><td class="num">32</td></tr>
+      <tr class="highlight"><td>Visible-page working slice (position 1–20, impressions ≥ 500)</td><td class="num">12,023</td><td class="num">28</td></tr>
+    </table>
+    <p><strong>Excluded, and why:</strong></p>
+    <ul class="reason-codes">
+      <li><code class="inline">engagement_rate</code>, <code class="inline">scroll_rate</code> — these define the label used in this study; including them as model features would let the model learn to restate its own answer.</li>
+      <li>FlyRank's product-decision fields (<code class="inline">health_score</code>, <code class="inline">priority_score</code>, <code class="inline">action_type</code>, <code class="inline">refresh_tier</code>) — confirmed absent from this dataset by direct column search, not assumed.</li>
+      <li>Raw query, URL, and title text — never included in the release.</li>
+      <li><code class="inline">client_id</code>, <code class="inline">content_id</code> — used only for grouping and the train/test split, never as model inputs.</li>
+    </ul>
+  </section>
+
+  <section class="chapter">
+    <div class="chapter-head"><span class="n">3</span><h2>Methodology</h2></div>
+    <p><strong>Baseline.</strong> <code class="inline">ctr_gap_score = max(0, tier_median_ctr − page_ctr)</code> — a transparent rule with no fitted weights, evaluated on the identical held-out clients and metric as the model, so the comparison is fair.</p>
+    <p><strong>Label / proxy.</strong> <code class="inline">engagement_deficit</code>: zero measured engagement AND below-median scroll rate, over the current 90-day window. This is a same-window proxy, not a validated future outcome — stated plainly here rather than glossed over.</p>
+    <p><strong>Features.</strong> Average position, log-scaled impressions, CTR, content age, word count (with an explicit missingness flag), and one-hot position tier / competition level / search intent.</p>
+    <p><strong>Validation design.</strong> Client-grouped 75/25 split (<code class="inline">GroupShuffleSplit</code> on client ID) — 21 train clients, 7 test clients, zero overlap, verified directly rather than assumed. A plain random row split risks letting pages from the same client leak shared patterns between train and test.</p>
+    <div class="callout">
+      <strong>Rigor check.</strong> The identical model under a naive, ungrouped split showed precision@20 inflated to 0.750, with 27 of 28 clients appearing in both train and test. That gap is the reason the grouped split matters — it isn't procedural decoration.
+    </div>
+    <p><strong>Leakage checks.</strong> Correlation of every final feature against the label topped out at 0.292 (log-impressions) — no single feature silently restates the label the way a deliberately-leaky column did in an earlier audit pass on this same pipeline.</p>
+  </section>
+
+  <section class="chapter">
+    <div class="chapter-head"><span class="n">4</span><h2>Results</h2></div>
+    <p>Model vs. baseline, on the identical client-grouped held-out test set (test-set base rate: 0.191 — reported here because a high precision score means little without it).</p>
+    <table>
+      <tr><th>Metric</th><th class="num">Baseline</th><th class="num">Model</th></tr>
+      <tr><td>Precision@20</td><td class="num">0.350</td><td class="num">0.600</td></tr>
+      <tr><td>Precision@50</td><td class="num">0.360</td><td class="num">0.520</td></tr>
+      <tr><td>ROC AUC</td><td class="num">0.648</td><td class="num">0.776</td></tr>
+    </table>
+    <figure>
+      <img src="figures/baseline_vs_model_precision.png" alt="Bar chart comparing baseline and model precision at K=20 and K=50, on the honest client-grouped test set">
+      <figcaption>Precision@20 and @50, baseline rule vs. Random Forest, same held-out clients. The model leads at both K values.</figcaption>
+    </figure>
+    <p><strong>Error analysis.</strong> False positives (274, ~33% of the test set) far outnumber false negatives (32, ~4%) — the model over-flags more than it misses. The false negatives it does produce skew toward <em>higher</em>-impression pages than the false positives (2,368 vs. 1,560 median impressions) — the costlier direction to get wrong, and worth naming rather than folding into one aggregate number.</p>
+  </section>
+
+  <section class="chapter">
+    <div class="chapter-head"><span class="n">5</span><h2>Limitations</h2></div>
+    <div class="callout">
+      <p><strong>What this work cannot claim:</strong></p>
+      <p>No causal claim — nothing here shows that a specific fix improves a page; that needs an actual experiment. The label is same-window, not a validated future outcome. Results come from a 30,000-row anonymized slice, not yet validated at full warehouse scale (~79M rows) — the code to do so exists but the gated warehouse access wasn't available while building this study, a real gap rather than a footnote. Roughly 40% of the model's feature importance traces to impression volume alone, a feature the baseline never had — meaning part of the model's edge is a fairer-comparison artifact, not pure pattern discovery. Nothing here supports any claim about Google's ranking algorithm.</p>
+    </div>
+  </section>
+
+  <section class="chapter">
+    <div class="chapter-head"><span class="n">6</span><h2>Ranked recommendations</h2></div>
+    <p>Every page in the working slice falls into exactly one of four archetypes, each with a distinct recommended action — not one blended score.</p>
+    <table>
+      <tr><th>Archetype</th><th class="num">% of queue</th><th>Recommended action</th></tr>
+      <tr><td>Healthy</td><td class="num">38.5%</td><td>Monitor only</td></tr>
+      <tr><td>CTR-only underperformer</td><td class="num">27.8%</td><td>Rewrite title/meta description</td></tr>
+      <tr><td>Dual underperformer</td><td class="num">21.1%</td><td>Full review, highest priority</td></tr>
+      <tr><td>Engagement-only underperformer</td><td class="num">12.6%</td><td>Review on-page content/layout</td></tr>
+    </table>
+    <figure>
+      <img src="figures/dual_underperformer_by_age.png" alt="Bar chart showing the dual-underperformer rate rising from 17.7% under six months old to 28.6% at one to two years old">
+      <figcaption>The dual-underperformer rate — needing both a title/meta fix and a content review — nearly doubles from pages under six months old to pages one to two years old.</figcaption>
+    </figure>
+    <p><strong>Cost/value read.</strong> CTR-only underperformers sit on the highest-traffic pages by far (mean 11,915 impressions vs. under 4,600 for the other two underperforming archetypes) — a cheap fix (a title/meta rewrite) on the highest-value real estate in the queue is likely the best reviewer-time-to-value ratio available here.</p>
+    <p><strong>What should never be automated from this queue alone:</strong> auto-publishing a rewritten title/meta without human review, auto-deleting or de-indexing any page based on this score, or treating a "high confidence" label as "certainly wrong" rather than "worth a look first."</p>
+  </section>
+
+  <section class="chapter">
+    <div class="chapter-head"><span class="n">7</span><h2>Reproducibility</h2></div>
+    <p>Random seed fixed at <code class="inline">42</code> throughout, used identically for every split and model fit.</p>
+    <pre>pip install -r requirements.txt
+jupyter nbconvert --to notebook --execute --inplace work/notebooks/capstone.ipynb</pre>
+    <p>The client-grouped test set (7 clients, 824 rows) is rebuilt fresh inside <code class="inline">capstone.ipynb</code> via <code class="inline">GroupShuffleSplit(random_state=42)</code> — the same cell that reports the results table above, so the split and the metric are checkable together.</p>
+    <ul class="repro-list">
+      <li>Repo: <a href="https://github.com/Kailaswadje/FlyRank-Internship_ML_Assignment_01_Week_01">github.com/Kailaswadje/FlyRank-Internship_ML_Assignment_01_Week_01</a></li>
+      <li>Capstone notebook: <code class="inline">work/notebooks/capstone.ipynb</code></li>
+      <li>Metrics receipt: <code class="inline">work/outputs/capstone_metrics.json</code></li>
+      <li>Full weekly notebook trail: <code class="inline">work/notebooks/w01</code> through <code class="inline">w07</code></li>
+    </ul>
+  </section>
+
+</div>
+
+<footer class="credit">
+  <div class="measure">
+    <div class="line">
+      Built on the FlyRank ML Internship dataset — <a href="https://flyrank.ai" target="_blank" rel="noopener">flyrank.ai</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
